@@ -1,4 +1,22 @@
 document.addEventListener('DOMContentLoaded', evt => {
+    let gioco = () => {
+        disegnaPalla();
+        disegnaBarra();
+        disegnaBlocchi();
+        controllaCollisioniConLaBarra();
+        controllaCollisioniConIBlocchi();
+        mostraPunteggio();
+        if(objPotenziamento) {
+            disegnaPotenziamento();
+            controllaCollisioniConIPotenziamenti();
+            muoviPotenziamento();
+
+        }
+        document.querySelector('#my').innerHTML = ball.speed;
+        document.querySelector('#mx').innerHTML = timeout;
+        muoviPalla();
+    };
+
     let disegnaPalla = () => {
         ctx.beginPath();
         ctx.arc(ball.x, ball.y, ball.raggio(), 0 ,Math.PI*2, false);
@@ -90,6 +108,7 @@ document.addEventListener('DOMContentLoaded', evt => {
         }
     };
     let disegnaBlocchi = () => {
+        numeroBlocchi=0;
         let disegnaBlocco = val => {
             if(val) {
                 ctx.beginPath();
@@ -99,6 +118,7 @@ document.addEventListener('DOMContentLoaded', evt => {
                 ctx.fill();
                 ctx.stroke();
                 ctx.closePath();
+                numeroBlocchi++;
             }
         }
         let riga,colonna;
@@ -109,7 +129,6 @@ document.addEventListener('DOMContentLoaded', evt => {
     };
 
     let controllaCollisioniConIBlocchi = () => {
-        let colpito = false;
         for(let riga in arrBlocchi)
             for (let colonna in arrBlocchi[riga]) {
                 if(arrBlocchi[riga][colonna]) {
@@ -118,6 +137,8 @@ document.addEventListener('DOMContentLoaded', evt => {
                     if (ball.x + ball.spoX() + ball.raggio() >= inizioX && ball.x + ball.spoX()  <= inizioX + blocco.lunghezza + ball.raggio())
                         if (ball.y  +ball.spoY() + ball.raggio() >= inizioY && ball.y + ball.spoY() <= inizioY + blocco.altezza + ball.raggio()) {
                             arrBlocchi[riga][colonna]--;
+                            if(!objPotenziamento)
+                                spawnaPotenziamento(inizioX,inizioY,potenziamenti[Math.floor(Math.random()*potenziamenti.length)]);
                             if(!colpito) {
                                 colpito = true;
                                 let x = ball.x;
@@ -129,22 +150,22 @@ document.addEventListener('DOMContentLoaded', evt => {
                                     if(y  >=  inizioY && y <= inizioY+blocco.altezza + ball.raggio())
                                         continua = false;
                                     else {
-                                        y+= ball.spoY();
+                                        y+= ball.dirY;
                                         iterazioniY++;
                                     }
                                 }
                                 continua = true;
-                                while (x  < canvas.width && x > 0 && continua) {
+                                while (x  < canvas.width && x > 0 && continua && ball.dirX != 0) {
                                     if(x >= inizioX && x <= inizioX + blocco.lunghezza + ball.raggio()) {
-                                        continua = false
-
+                                        continua = false;
                                     }
                                     else {
-                                        x += ball.spoX();
+                                        x += ball.dirX;
                                         iterazioniX++;
                                     }
                                 }
                                 if(iterazioniX === iterazioniY){
+                                    ball.dirY = -ball.dirY;
                                     ball.dirX = -ball.dirX;
                                 }else if(iterazioniX > iterazioniY) {
                                     ball.dirX = -ball.dirX;
@@ -152,7 +173,7 @@ document.addEventListener('DOMContentLoaded', evt => {
                                 else {
                                     ball.dirY = -ball.dirY;
                                 }
-
+                                colpito = false;
                             }
 
                         }
@@ -160,17 +181,169 @@ document.addEventListener('DOMContentLoaded', evt => {
             }
 
     };
+    let mostraPunteggio = () => {
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "#000000";
+        ctx.textAlign = 'start';
+        ctx.fillText("BLOCCHI RIMASTI: "+numeroBlocchi+'                Premere ESC per pausa', 8, 20);
+    };
+    let schermataPausa = () => {
 
+        for(let vocePausa of vociPausa) {
+            if (mouseX > vocePausa.x && mouseX < vocePausa.x + vocePausa.lunghezza && mouseY > vocePausa.y && mouseY < vocePausa.y + vocePausa.altezza) {
+                vocePausa.coloreSfondo = coloreSfondoEvidenziato;
+                if(mouseClick) {
+                    vocePausa.click();
+                    mouseClick = false;
+                }
+            } else
+                vocePausa.coloreSfondo = coloreSfondoNormale;
+            vocePausa.draw();
+        }
+    };
+
+    let nuovaPartita = () => {
+        arrBlocchi= JSON.parse(livelloBaseJson);
+        pausa= false;
+        ball.x = canvas.width/2;
+        ball.height = canvas.height/2;
+        ball.dirX = 0
+        ball.dirY = 4;
+        ball.speed=4;
+        ball.size = 3;
+        objPotenziamento = null;
+        barra.size = 3;
+    };
+
+    let spawnaPotenziamento = (x,y,potenziamento) => {
+        objPotenziamento = {
+            x: x,
+            y: y,
+            potenziamento: potenziamento,
+        }
+
+    };
+    let disegnaPotenziamento = () => {
+        let colore = objPotenziamento.potenziamento.isBonus? 'green':'red';
+        ctx.beginPath();
+        ctx.rect(objPotenziamento.x, objPotenziamento.y, 75, 30);
+        ctx.fillStyle = colore;
+        ctx.strokeStyle = '#000000';
+        ctx.fill();
+        ctx.stroke();
+        ctx.font = "28px Arial";
+        ctx.fillStyle = "#000000";
+        ctx.textAlign = 'center';
+        ctx.fillText(objPotenziamento.potenziamento.scritta, objPotenziamento.x+37, objPotenziamento.y+28);
+        ctx.closePath();
+    };
+    let muoviPotenziamento = () => {
+        if(objPotenziamento) {
+            if (objPotenziamento.y < canvas.height)
+                objPotenziamento.y += 7;
+            else
+                objPotenziamento = null;
+        }
+    };
+
+    let controllaCollisioniConIPotenziamenti = ()  => {
+        if(objPotenziamento.x >= barra.posX && objPotenziamento.x <= barra.posX+barra.lunghezza()
+            && objPotenziamento.y > barra.posY && objPotenziamento.y <= barra.posY + barra.altezza) {
+            objPotenziamento.potenziamento.funzione();
+            objPotenziamento =null;
+        }
+    };
 
 
     document.addEventListener('mousemove', evt => {
-       barra.posX = muoviBarra(evt.clientX);
+        mouseX = evt.clientX;
+        mouseY = evt.clientY;
+        barra.posX = muoviBarra(evt.clientX);
     });
+    document.addEventListener('keyup', evt => {
+        if(evt.key === 'Escape')
+            pausa = !pausa;
+    });
+
+    document.addEventListener('click', evt => {
+        mouseClick = true;
+    });
+
+
+    class VoceMenu {
+        constructor(frase, y, coloreSfondo, funzione) {
+            this.lunghezza = 300;
+            this.altezza = 50;
+            this.frase = frase;
+            this.x = canvas.width/2- this.lunghezza/2;
+            this.y = y;
+            this.coloreSfondo = coloreSfondo;
+            this.click = funzione;
+            this.draw = () => {
+                ctx.beginPath();
+                ctx.rect(this.x, this.y, this.lunghezza, this.altezza);
+                ctx.fillStyle = this.coloreSfondo;
+                ctx.strokeStyle = '#000000';
+                ctx.fill();
+                ctx.stroke();
+                ctx.font = "36px Arial";
+                ctx.fillStyle = "#000000";
+                ctx.textAlign = 'center';
+                ctx.fillText(this.frase, this.x+this.lunghezza/2, this.y+this.altezza- this.altezza/4);
+                ctx.closePath();
+
+            }
+        }
+    }
+    class Potenziamento {
+        constructor(scritta, isBonus,funzione) {
+            this.scritta = scritta;
+            this.isBonus = isBonus;
+            this.funzione = funzione;
+        }
+
+    }
+
+
+
+
+
+
+
     canvas = document.querySelector('canvas');
     ctx = canvas.getContext('2d');
     canvas.width = 1920;
-    canvas.height = 1080;
+    canvas.height = 900;
     ctx.scale(1, 1);
+    let mouseX = 0;
+    let mouseY = 0;
+    let mouseClick = false;
+
+    let potenziamenti = [
+        new Potenziamento('< >',true, () => barra.setSize(barra.size+1)),
+        new Potenziamento('> <',false, () => barra.setSize(barra.size-1)),
+        new Potenziamento(' O ',true, () => ball.setSize(ball.size+1)),
+        new Potenziamento(' o ',false, () => ball.setSize(ball.size-1)),
+        new Potenziamento('>>>', false, () => ball.increseSpeed()),
+        new Potenziamento('<<<', true, () => ball.lowerSpeed()),
+        new Potenziamento( '---',true, () => {
+            colpito=true;
+            ball.color = 'red';
+            setTimeout(()=> {
+                colpito = false;
+                ball.color='black';
+            }, 10000);}),
+        
+    ];
+    let objPotenziamento = null;
+    let timeout = false;
+    let coloreSfondoNormale = '#ffffff';
+    let coloreSfondoEvidenziato = '#226666';
+    let vociPausa = [
+        new VoceMenu('RIPRENDI',200,coloreSfondoNormale, () => pausa=false),
+        new VoceMenu('NUOVA PARTITA',300,coloreSfondoNormale, nuovaPartita),
+    ];
+    let pausa = true;
     let ball = {
         color: '#000000',
         size: 3,
@@ -183,41 +356,73 @@ document.addEventListener('DOMContentLoaded', evt => {
     ball.raggio = () => ball.size*5;
     ball.spoX = () => ball.dirX * ball.speed;
     ball.spoY = () => ball.dirY * ball.speed;
+    ball.setSize = size => {
+        if(size > 5)
+            ball.size = 5;
+        else if (size< 1)
+            ball.size =1;
+        else ball.size = size;
+    };
+    ball.increseSpeed = () => {
+        if(ball.speed+2<10) {
+            ball.speed +=2;
+        }else ball.speed = 10;
+    };
+    ball.lowerSpeed = () => {
+        if(ball.speed-2 > 4)
+            ball.speed -=2;
+        else if(ball.speed-1 >0)
+            ball.speed -=1;
+    };
+    let colpito = false;
+
     let barra = {
         size: 3,
         passo : 11,
         altezza: 30,
         color: '#000000',
     };
+
     barra.lunghezza = () => barra.passo*barra.size*10;
     barra.posX =  canvas.width/2 - barra.lunghezza()/2;
     barra.posY = canvas.height-barra.altezza-50;
+    barra.setSize = newSize => {
+        if(newSize > 6)
+            barra.size = 6;
+        else if(newSize < 1)
+            barra.size = 1;
+        else barra.size = newSize
+    };
 
-    let arrBlocchi = [];
-    arrBlocchi [0] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
-    arrBlocchi [1] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
-    arrBlocchi [2] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
-    arrBlocchi [3] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
-    arrBlocchi [4] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
+    let numeroBlocchi = 0;
+    let livelloBase = [];
+    livelloBase [0] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
+    livelloBase [1] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
+    livelloBase [2] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
+    livelloBase [3] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
+    livelloBase [4] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
+
+    let livelloBaseJson = JSON.stringify(livelloBase);
+    let arrBlocchi = JSON.parse(livelloBaseJson);
     let blocco = {
         lunghezza: 50,
         altezza: 25,
         margin: 0,
-        marginX: 50,
+        marginX: 100,
         marginY: 150,
         colori: ['green','yellow','red','blue','black'],
     }
 
     let frame = () => {
-        ctx.clearRect(0,0, canvas.width, canvas.height);
-        disegnaPalla();
-        disegnaBarra();
-        disegnaBlocchi();
-        controllaCollisioniConLaBarra();
-        controllaCollisioniConIBlocchi();
-        muoviPalla();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if(!pausa) {
+            gioco();
+        }else {
+            mostraPunteggio();
+            schermataPausa();
+        }
 
-
+        mouseClick = false;
         requestAnimationFrame(frame);
     }
     frame();
