@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', evt => {
         if(ball.y - ball.raggio()>= canvas.height) { //fuori campo
             ball.x = canvas.width/2;
             ball.dirX = 0;
+            ball.dirY = 4;
             ball.y = canvas.height/2;
         }
 
@@ -38,28 +39,50 @@ document.addEventListener('DOMContentLoaded', evt => {
         if(ball.y+ ball.raggio() >= barra.posY) {
             if (ball.x >= barra.posX && ball.x <= barra.posX + barra.lunghezza()) { //se colpisce la barra
                 let parte = barra.lunghezza()/11;
-                if(ball.x >= barra.posX  && ball.x < barra.posX+parte)
+                if(ball.x >= barra.posX  && ball.x < barra.posX+parte) {
+                    ball.dirY = 1;
                     ball.dirX = -5;
-                else if(ball.x >= barra.posX +parte && ball.x < barra.posX + (parte*2))
+                }
+                else if(ball.x >= barra.posX +parte && ball.x < barra.posX + (parte*2)) {
+                    ball.dirY = 1;
                     ball.dirX = -4;
-                else if(ball.x >= barra.posX +(parte*2) && ball.x < barra.posX + (parte*3))
+                }
+                else if(ball.x >= barra.posX +(parte*2) && ball.x < barra.posX + (parte*3)) {
+                    ball.dirY = 2;
                     ball.dirX = -3;
-                else if(ball.x >= barra.posX +(parte*3) && ball.x < barra.posX + (parte*4))
+                }
+                else if(ball.x >= barra.posX +(parte*3) && ball.x < barra.posX + (parte*4)) {
+                    ball.dirY = 3;
                     ball.dirX = -2;
-                else if(ball.x >= barra.posX +(parte*4) && ball.x < barra.posX + (parte*5))
+                }
+                else if(ball.x >= barra.posX +(parte*4) && ball.x < barra.posX + (parte*5)) {
+                    ball.dirY = 3;
                     ball.dirX = -1;
-                else if(ball.x >= barra.posX +(parte*5) && ball.x < barra.posX + (parte*6))
+                }
+                else if(ball.x >= barra.posX +(parte*5) && ball.x < barra.posX + (parte*6)) {
+                    ball.dirY = 4;
                     ball.dirX = 0;
-                else if(ball.x >= barra.posX +(parte*6) && ball.x < barra.posX + (parte*7))
+                }
+                else if(ball.x >= barra.posX +(parte*6) && ball.x < barra.posX + (parte*7)) {
+                    ball.dirY = 3;
                     ball.dirX = 1;
-                else if(ball.x >= barra.posX +(parte*7) && ball.x < barra.posX + (parte*8))
+                }
+                else if(ball.x >= barra.posX +(parte*7) && ball.x < barra.posX + (parte*8)) {
+                    ball.dirY = 3;
                     ball.dirX = 2;
-                else if(ball.x >= barra.posX +(parte*8) && ball.x < barra.posX + (parte*9))
+                }
+                else if(ball.x >= barra.posX +(parte*8) && ball.x < barra.posX + (parte*9)) {
+                    ball.dirY = 2;
                     ball.dirX = 3;
-                else if(ball.x >= barra.posX +(parte*9) && ball.x < barra.posX + (parte*10))
+                }
+                else if(ball.x >= barra.posX +(parte*9) && ball.x < barra.posX + (parte*10)) {
+                    ball.dirY = 1;
                     ball.dirX = 4;
-                else if(ball.x >= barra.posX +(parte*10) && ball.x < barra.posX + (parte*11))
+                }
+                else if(ball.x >= barra.posX +(parte*10) && ball.x < barra.posX + (parte*11)) {
+                    ball.dirY = 1;
                     ball.dirX = 5;
+                }
                 if(ball.dirY > 0 && ball.y < barra.posY+barra.altezza )
                     ball.dirY = -ball.dirY;
 
@@ -87,23 +110,51 @@ document.addEventListener('DOMContentLoaded', evt => {
 
     let controllaCollisioniConIBlocchi = () => {
         let colpito = false;
-        let rigirato = false;
         for(let riga in arrBlocchi)
             for (let colonna in arrBlocchi[riga]) {
                 if(arrBlocchi[riga][colonna]) {
                     let inizioX = blocco.marginX + (colonna * blocco.lunghezza + blocco.margin * colonna);
                     let inizioY = blocco.marginY + (riga * blocco.altezza + blocco.margin * riga)
-                    if (ball.x + ball.raggio() >= inizioX && ball.x - ball.raggio() <= inizioX + blocco.lunghezza)
-                        if (ball.y + ball.raggio() >= inizioY && ball.y - ball.raggio() <= inizioY + blocco.altezza) {
+                    if (ball.x + ball.spoX() + ball.raggio() >= inizioX && ball.x + ball.spoX()  <= inizioX + blocco.lunghezza + ball.raggio())
+                        if (ball.y  +ball.spoY() + ball.raggio() >= inizioY && ball.y + ball.spoY() <= inizioY + blocco.altezza + ball.raggio()) {
+                            arrBlocchi[riga][colonna]--;
                             if(!colpito) {
-                                colpito= true;
-                                ball.dirY = -ball.dirY;
-                                arrBlocchi[riga][colonna]--;
-                            }else if(!rigirato){
-                                rigirato = true;
-                                //TODO le collisioni con i blocchetti fanno schifo, sistemare
-                                ball.dirX = -ball.dirX;
+                                colpito = true;
+                                let x = ball.x;
+                                let y = ball.y;
+                                let iterazioniX = 0;
+                                let iterazioniY = 0;
+                                let continua= true;
+                                while (y  < canvas.height && y > 0 && continua) {
+                                    if(y  >=  inizioY && y <= inizioY+blocco.altezza + ball.raggio())
+                                        continua = false;
+                                    else {
+                                        y+= ball.spoY();
+                                        iterazioniY++;
+                                    }
+                                }
+                                continua = true;
+                                while (x  < canvas.width && x > 0 && continua) {
+                                    if(x >= inizioX && x <= inizioX + blocco.lunghezza + ball.raggio()) {
+                                        continua = false
+
+                                    }
+                                    else {
+                                        x += ball.spoX();
+                                        iterazioniX++;
+                                    }
+                                }
+                                if(iterazioniX === iterazioniY){
+                                    ball.dirX = -ball.dirX;
+                                }else if(iterazioniX > iterazioniY) {
+                                    ball.dirX = -ball.dirX;
+                                }
+                                else {
+                                    ball.dirY = -ball.dirY;
+                                }
+
                             }
+
                         }
                 }
             }
@@ -126,8 +177,8 @@ document.addEventListener('DOMContentLoaded', evt => {
         x : canvas.width/2,
         y : canvas.height/2,
         dirX: 0,
-        dirY: 3, // se è a 0 per troppo tempo aggiungere check
-        speed: 5,
+        dirY: 4, // se è a 0 per troppo tempo aggiungere check
+        speed: 4,
     };
     ball.raggio = () => ball.size*5;
     ball.spoX = () => ball.dirX * ball.speed;
@@ -151,9 +202,9 @@ document.addEventListener('DOMContentLoaded', evt => {
     let blocco = {
         lunghezza: 50,
         altezza: 25,
-        margin: 5,
+        margin: 0,
         marginX: 50,
-        marginY: 50,
+        marginY: 150,
         colori: ['green','yellow','red','blue','black'],
     }
 
@@ -162,11 +213,11 @@ document.addEventListener('DOMContentLoaded', evt => {
         disegnaPalla();
         disegnaBarra();
         disegnaBlocchi();
-
-
-        muoviPalla();
         controllaCollisioniConLaBarra();
         controllaCollisioniConIBlocchi();
+        muoviPalla();
+
+
         requestAnimationFrame(frame);
     }
     frame();
