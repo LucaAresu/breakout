@@ -6,14 +6,11 @@ document.addEventListener('DOMContentLoaded', evt => {
         controllaCollisioniConLaBarra();
         controllaCollisioniConIBlocchi();
         mostraPunteggio();
-        if(objPotenziamento) {
-            disegnaPotenziamento();
-            controllaCollisioniConIPotenziamenti();
-            muoviPotenziamento();
 
-        }
-        document.querySelector('#my').innerHTML = ball.speed;
-        document.querySelector('#mx').innerHTML = timeout;
+        gestisciPotenziamenti();
+        gestisciProiettili();
+
+
         muoviPalla();
     };
 
@@ -116,7 +113,8 @@ document.addEventListener('DOMContentLoaded', evt => {
                 ctx.fillStyle = blocco.colori[arrBlocchi[riga][colonna]-1];
                 ctx.strokeStyle = 'black';
                 ctx.fill();
-                ctx.stroke();
+                if(val !== 6)
+                    ctx.stroke();
                 ctx.closePath();
                 numeroBlocchi++;
             }
@@ -206,13 +204,20 @@ document.addEventListener('DOMContentLoaded', evt => {
         arrBlocchi= JSON.parse(livelloBaseJson);
         pausa= false;
         ball.x = canvas.width/2;
-        ball.height = canvas.height/2;
+        ball.y = canvas.height/2;
         ball.dirX = 0
         ball.dirY = 4;
         ball.speed=4;
         ball.size = 3;
+        ball.color= 'black';
         objPotenziamento = null;
         barra.size = 3;
+        colpito = false;
+        intervalProiettili.forEach(ele => {
+            clearInterval(ele);
+        });
+        intervalProiettili = [];
+        proiettili = [];
     };
 
     let spawnaPotenziamento = (x,y,potenziamento) => {
@@ -245,6 +250,13 @@ document.addEventListener('DOMContentLoaded', evt => {
                 objPotenziamento = null;
         }
     };
+    let gestisciPotenziamenti = () => {
+        if(objPotenziamento) {
+            disegnaPotenziamento();
+            controllaCollisioniConIPotenziamenti();
+            muoviPotenziamento();
+        }
+    }
 
     let controllaCollisioniConIPotenziamenti = ()  => {
         if(objPotenziamento.x >= barra.posX && objPotenziamento.x <= barra.posX+barra.lunghezza()
@@ -253,6 +265,34 @@ document.addEventListener('DOMContentLoaded', evt => {
             objPotenziamento =null;
         }
     };
+
+    let creaProiettile = () => {
+        proiettili[proiettili.length] = new Proiettile(barra.posX);
+        proiettili[proiettili.length] = new Proiettile(barra.posX+barra.lunghezza());
+    };
+
+    let gestisciProiettili = () => {
+        if(proiettili) {
+            let newArray = [];
+            if (proiettili.length) {
+                proiettili.forEach(proiettile => {
+                    proiettile.draw();
+                    proiettile.move();
+                    proiettile.controlloCollisioni();
+                    if (!proiettile.selfDestroy)
+                        newArray[newArray.length] = proiettile;
+
+                });
+            }
+            proiettili = null;
+            if (newArray)
+                proiettili = newArray;
+        }
+    };
+
+
+
+
 
 
     document.addEventListener('mousemove', evt => {
@@ -268,6 +308,9 @@ document.addEventListener('DOMContentLoaded', evt => {
     document.addEventListener('click', evt => {
         mouseClick = true;
     });
+
+
+
 
 
     class VoceMenu {
@@ -304,6 +347,42 @@ document.addEventListener('DOMContentLoaded', evt => {
 
     }
 
+    class Proiettile {
+        constructor(x) {
+            this.selfDestroy = false;
+            this.x = x;
+            this.y = barra.posY;
+            this.draw = () => {
+                ctx.beginPath();
+                ctx.rect(this.x, this.y, 3, 10);
+                ctx.fillStyle = 'black';
+                ctx.fill();
+                ctx.closePath();
+            };
+            this.move = () => {
+                if(this.y < 0 )
+                    this.selfDestroy= true;
+                else
+                    this.y -= 10;
+            };
+            this.controlloCollisioni = () => {
+                for(let riga in arrBlocchi)
+                    for (let colonna in arrBlocchi[riga]) {
+                        if (arrBlocchi[riga][colonna]) {
+                            let inizioX = blocco.marginX + (colonna * blocco.lunghezza + blocco.margin * colonna);
+                            let inizioY = blocco.marginY + (riga * blocco.altezza + blocco.margin * riga)
+                            if (this.x >= inizioX && this.x <= inizioX + blocco.lunghezza)
+                                if (this.y >= inizioY && this.y <= inizioY + blocco.altezza) {
+                                    arrBlocchi[riga][colonna]--;
+                                    this.selfDestroy = true;
+                                }
+                        }
+                    }
+            }
+
+        }
+    }
+
 
 
 
@@ -320,12 +399,12 @@ document.addEventListener('DOMContentLoaded', evt => {
     let mouseClick = false;
 
     let potenziamenti = [
-        new Potenziamento('< >',true, () => barra.setSize(barra.size+1)),
-        new Potenziamento('> <',false, () => barra.setSize(barra.size-1)),
-        new Potenziamento(' O ',true, () => ball.setSize(ball.size+1)),
-        new Potenziamento(' o ',false, () => ball.setSize(ball.size-1)),
-        new Potenziamento('>>>', false, () => ball.increseSpeed()),
-        new Potenziamento('<<<', true, () => ball.lowerSpeed()),
+        //new Potenziamento('< >',true, () => barra.setSize(barra.size+1)),
+        //new Potenziamento('> <',false, () => barra.setSize(barra.size-1)),
+        //new Potenziamento(' O ',true, () => ball.setSize(ball.size+1)),
+        //new Potenziamento(' o ',false, () => ball.setSize(ball.size-1)),
+        //new Potenziamento('>>>', false, () => ball.increseSpeed()),
+        //new Potenziamento('<<<', true, () => ball.lowerSpeed()),
         new Potenziamento( '---',true, () => {
             colpito=true;
             ball.color = 'red';
@@ -333,10 +412,14 @@ document.addEventListener('DOMContentLoaded', evt => {
                 colpito = false;
                 ball.color='black';
             }, 10000);}),
-        
+        new Potenziamento('|||', true, () => {
+            intervalProiettili[intervalProiettili.length] = setInterval(creaProiettile, 100);
+            setTimeout(() => clearInterval(intervalProiettili.shift()), 10000);
+        })
     ];
+    let intervalProiettili = [];
     let objPotenziamento = null;
-    let timeout = false;
+    let proiettili = [];
     let coloreSfondoNormale = '#ffffff';
     let coloreSfondoEvidenziato = '#226666';
     let vociPausa = [
@@ -400,7 +483,7 @@ document.addEventListener('DOMContentLoaded', evt => {
     livelloBase [1] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
     livelloBase [2] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
     livelloBase [3] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
-    livelloBase [4] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
+    livelloBase [4] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,6,6,6,6];
 
     let livelloBaseJson = JSON.stringify(livelloBase);
     let arrBlocchi = JSON.parse(livelloBaseJson);
@@ -410,7 +493,7 @@ document.addEventListener('DOMContentLoaded', evt => {
         margin: 0,
         marginX: 100,
         marginY: 150,
-        colori: ['green','yellow','red','blue','black'],
+        colori: ['green','yellow','red','blue','black','white'],
     }
 
     let frame = () => {
@@ -424,6 +507,6 @@ document.addEventListener('DOMContentLoaded', evt => {
 
         mouseClick = false;
         requestAnimationFrame(frame);
-    }
+    };
     frame();
 });
