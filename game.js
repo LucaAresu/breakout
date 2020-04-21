@@ -1,8 +1,9 @@
 document.addEventListener('DOMContentLoaded', evt => {
     let gioco = () => {
+        disegnaBlocchi();
         disegnaPalla();
         disegnaBarra();
-        disegnaBlocchi();
+
         controllaCollisioniConLaBarra();
         controllaCollisioniConIBlocchi();
         mostraPunteggio();
@@ -18,7 +19,9 @@ document.addEventListener('DOMContentLoaded', evt => {
         ctx.beginPath();
         ctx.arc(ball.x, ball.y, ball.raggio(), 0 ,Math.PI*2, false);
         ctx.fillStyle = ball.color;
+        ctx.strokeStyle = 'black';
         ctx.fill();
+        ctx.stroke();
         ctx.closePath();
     };
     let disegnaBarra =() => {
@@ -40,6 +43,7 @@ document.addEventListener('DOMContentLoaded', evt => {
             ball.dirX = 0;
             ball.dirY = 4;
             ball.y = canvas.height/2;
+            numeroMorti++;
         }
 
     };
@@ -163,7 +167,6 @@ document.addEventListener('DOMContentLoaded', evt => {
                                     }
                                 }
                                 if(iterazioniX === iterazioniY){
-                                    ball.dirY = -ball.dirY;
                                     ball.dirX = -ball.dirX;
                                 }else if(iterazioniX > iterazioniY) {
                                     ball.dirX = -ball.dirX;
@@ -180,10 +183,64 @@ document.addEventListener('DOMContentLoaded', evt => {
 
     };
     let mostraPunteggio = () => {
-        ctx.font = "16px Arial";
+        ctx.font = "16px Courier";
         ctx.fillStyle = "#000000";
         ctx.textAlign = 'start';
         ctx.fillText("BLOCCHI RIMASTI: "+numeroBlocchi+'                Premere ESC per pausa', 8, 20);
+        if(numeroBlocchi === 0 && partitaIniziata && !pausa) {
+            if(livelloScelto !== 'campagna')
+                messaggioVittoriaNormale();
+            else {
+                livelloCampagnaSuperato = true;
+                pausa = true;
+                schermata = 'prossimo';
+
+            }
+        }
+    };
+
+    let messaggioVittoriaNormale = () => {
+        let primaRiga,secondaRiga,terzaRiga;
+            primaRiga = 'LIVELLO COMPLETATO ';
+            secondaRiga = 'CON '+numeroMorti+' MORTI';
+            if(numeroMorti === 0)
+                terzaRiga = 'WOW SEI FORTE';
+            else if(numeroMorti < 5)
+                terzaRiga = 'DAI HO VISTO DI PEGGIO';
+            else if(numeroMorti < 10)
+                terzaRiga = 'TI RICORDO CHE I GATTI HANNO 9 VITE';
+            else if(numeroMorti < 25)
+                terzaRiga = 'BEH INIZIANO AD ESSERE TANTINE';
+            else if(numeroMorti < 100)
+                terzaRiga = 'SI PUO\' FARE DECISAMENTE DI MEGLIO';
+            else
+                terzaRiga = 'FORSE E\' MEGLIO TROVARE ALTRI HOBBY';
+        ctx.font = "48px Courier";
+        ctx.fillStyle = "#000000";
+        ctx.textAlign = 'center';
+        ctx.fillText(primaRiga, canvas.width/2, canvas.height/2-150);
+        ctx.fillText(secondaRiga, canvas.width/2, canvas.height/2-50);
+        ctx.fillText(terzaRiga, canvas.width/2, canvas.height/2 +50)
+    };
+    let schermataProssimoLivello = () => {
+        let vocePausa = new VoceMenu('CONTINUA', 600, coloreSfondoNormale, nuovaPartita)
+        ctx.font = "48px Courier";
+        ctx.fillStyle = "#000000";
+        ctx.textAlign = 'center';
+        ctx.fillText(frasiVittoriaCampagna[livelloDaMostrare][0], canvas.width/2, canvas.height/2-150);
+        ctx.fillText(frasiVittoriaCampagna[livelloDaMostrare][1]+numeroMorti, canvas.width/2, canvas.height/2-50);
+        ctx.fillText(frasiVittoriaCampagna[livelloDaMostrare][2], canvas.width/2, canvas.height/2 +50)
+        if(livelloCampagna < massimoLivelloCampagna) {
+            if (mouseX > vocePausa.x && mouseX < vocePausa.x + vocePausa.lunghezza && mouseY > vocePausa.y && mouseY < vocePausa.y + vocePausa.altezza) {
+                vocePausa.coloreSfondo = coloreSfondoEvidenziato;
+                if (mouseClick) {
+                    vocePausa.click('campagna');
+                    mouseClick = false;
+                }
+            } else
+                vocePausa.coloreSfondo = coloreSfondoNormale;
+            vocePausa.draw();
+        }
     };
     let schermataPausa = () => {
 
@@ -191,7 +248,31 @@ document.addEventListener('DOMContentLoaded', evt => {
             if (mouseX > vocePausa.x && mouseX < vocePausa.x + vocePausa.lunghezza && mouseY > vocePausa.y && mouseY < vocePausa.y + vocePausa.altezza) {
                 vocePausa.coloreSfondo = coloreSfondoEvidenziato;
                 if(mouseClick) {
-                    vocePausa.click();
+                    vocePausa.click(vocePausa.frase.toLowerCase());
+                    mouseClick = false;
+                }
+            } else
+                vocePausa.coloreSfondo = coloreSfondoNormale;
+            if(vocePausa.frase === 'RIPRENDI' && !partitaIniziata);
+            else
+                vocePausa.draw();
+        }
+    };
+
+    let nuovaPartitaMenu = () => {
+        schermata = 'nuovaPartita';
+        let vociPausa = [
+            new VoceMenu('FACILE',200,coloreSfondoNormale,  nuovaPartita),
+            new VoceMenu('NORMALE',300, coloreSfondoNormale, nuovaPartita),
+            new VoceMenu('DIFFICILE',400,coloreSfondoNormale, nuovaPartita),
+            new VoceMenu('FASTIDIO',500,coloreSfondoNormale,nuovaPartita),
+            new VoceMenu('MASSIMO', 600,coloreSfondoNormale,nuovaPartita),
+        ];
+        for(let vocePausa of vociPausa) {
+            if (mouseX > vocePausa.x && mouseX < vocePausa.x + vocePausa.lunghezza && mouseY > vocePausa.y && mouseY < vocePausa.y + vocePausa.altezza) {
+                vocePausa.coloreSfondo = coloreSfondoEvidenziato;
+                if(mouseClick) {
+                    vocePausa.click(vocePausa.frase.toLowerCase());
                     mouseClick = false;
                 }
             } else
@@ -200,25 +281,143 @@ document.addEventListener('DOMContentLoaded', evt => {
         }
     };
 
-    let nuovaPartita = () => {
-        arrBlocchi= JSON.parse(livelloBaseJson);
-        pausa= false;
-        ball.x = canvas.width/2;
-        ball.y = canvas.height/2;
-        ball.dirX = 0
-        ball.dirY = 4;
-        ball.speed=4;
-        ball.size = 3;
-        ball.color= 'black';
+    let nuovaPartita = async diff => {
+        if(livelloCampagnaSuperato) {
+            livelloCampagnaSuperato = false;
+            if(livelloCampagna < massimoLivelloCampagna)
+                livelloCampagna++;
+        }
+        await getLivello(diff);
+        livelloScelto = diff;
+
+
+        numeroMorti = 0;
         objPotenziamento = null;
-        barra.size = 3;
         colpito = false;
+        if(proiettiliInfiniti)
+            clearInterval(proiettiliInfiniti);
+        if(timeoutProiettiliInfiniti)
+            clearTimeout(timeoutProiettiliInfiniti);
         intervalProiettili.forEach(ele => {
             clearInterval(ele);
         });
         intervalProiettili = [];
         proiettili = [];
+        if(diff !== 'campagna') {
+            adeguaPalla();
+            adeguaBarra();
+        }else {
+            adeguaPallaCampagna();
+            adeguaBarraCampagna();
+        }
+
+        setTimeout( () => {
+
+            pausa = false;
+            partitaIniziata = true;
+            livelloDaMostrare = livelloCampagna;
+        }, 200);
+
     };
+    let adeguaPalla = () => {
+        ball.x = canvas.width/2;
+        ball.y = canvas.height/2;
+        ball.dirX = 0
+        ball.dirY = 4;
+        ball.color= 'black';
+        ball.size = 3;
+        ball.speed = 4;
+
+        switch(livelloScelto) {
+          case 'facile':
+              ball.speed = 3;
+              ball.size = 5;
+              break;
+          case 'difficile':
+              ball.speed = 6;
+              break;
+          case 'massimo':
+              ball.size = 2;
+              ball.speed = 8;
+              break;
+          case 'fastidio':
+              ball.size= 1;
+              ball.speed = 8;
+              break;
+
+      }
+    };
+
+    let adeguaPallaCampagna = () => {
+        ball.x = canvas.width/2;
+        ball.y = canvas.height/2;
+        ball.dirX = 0
+        ball.dirY = 4;
+        ball.color= 'black';
+        ball.size = 3;
+        ball.speed = 4;
+
+        switch(livelloCampagna) {
+            case 6:
+                ball.speed=7;
+                break;
+            case  7:
+                ball.speed = 1;
+                break;
+        }
+
+    };
+    let adeguaBarraCampagna = () => {
+        barra.size = 3;
+        switch(livelloCampagna){
+            case 6:
+                timeoutProiettiliInfiniti = setTimeout(() => proiettiliInfiniti = setInterval(creaProiettile, 100), 60000);
+                break;
+            case 9:
+                proiettiliInfiniti = setInterval(creaProiettile, 25)
+                break;
+
+        }
+
+    };
+    let adeguaBarra = () => {
+        barra.size = 3;
+        switch(livelloScelto) {
+
+          case 'facile':
+              barra.size = 4;
+              break;
+          case 'difficile':
+              break;
+          case 'massimo':
+              barra.size = 2;
+              break;
+          case 'fastidio':
+              barra.size = 2;
+              break;
+          default:
+      }
+    };
+    let getLivello = diff => {
+      let headers = new Headers();
+      let init = {
+          method: 'POST',
+          headers: headers,
+          body : JSON.stringify({
+              diff: diff,
+              livello: livelloCampagna,
+          }),
+      } ;
+      let request = new Request('level.php',init);
+      fetch(request).then( resp => {
+          if(resp.ok)
+              return resp.json();
+      }).then(resp => {
+          if(resp)
+              arrBlocchi=resp;
+      }).catch();
+    };
+
 
     let spawnaPotenziamento = (x,y,potenziamento) => {
         objPotenziamento = {
@@ -236,7 +435,7 @@ document.addEventListener('DOMContentLoaded', evt => {
         ctx.strokeStyle = '#000000';
         ctx.fill();
         ctx.stroke();
-        ctx.font = "28px Arial";
+        ctx.font = "28px Courier";
         ctx.fillStyle = "#000000";
         ctx.textAlign = 'center';
         ctx.fillText(objPotenziamento.potenziamento.scritta, objPotenziamento.x+37, objPotenziamento.y+28);
@@ -301,8 +500,10 @@ document.addEventListener('DOMContentLoaded', evt => {
         barra.posX = muoviBarra(evt.clientX);
     });
     document.addEventListener('keyup', evt => {
-        if(evt.key === 'Escape')
-            pausa = !pausa;
+        if(evt.key === 'Escape') {
+            pausa = true;
+            schermata = 'pausa';
+        }
     });
 
     document.addEventListener('click', evt => {
@@ -315,7 +516,7 @@ document.addEventListener('DOMContentLoaded', evt => {
 
     class VoceMenu {
         constructor(frase, y, coloreSfondo, funzione) {
-            this.lunghezza = 300;
+            this.lunghezza = 350;
             this.altezza = 50;
             this.frase = frase;
             this.x = canvas.width/2- this.lunghezza/2;
@@ -329,7 +530,7 @@ document.addEventListener('DOMContentLoaded', evt => {
                 ctx.strokeStyle = '#000000';
                 ctx.fill();
                 ctx.stroke();
-                ctx.font = "36px Arial";
+                ctx.font = "36px Courier";
                 ctx.fillStyle = "#000000";
                 ctx.textAlign = 'center';
                 ctx.fillText(this.frase, this.x+this.lunghezza/2, this.y+this.altezza- this.altezza/4);
@@ -386,6 +587,63 @@ document.addEventListener('DOMContentLoaded', evt => {
 
 
 
+    let frasiVittoriaCampagna = [];
+    frasiVittoriaCampagna[1] = [
+        'LIVELLO COMPLETATO',
+        'MORTI TOTALI: ',
+        '',
+        ];
+    frasiVittoriaCampagna[2] = [
+        'LIVELLO COMPLETATO',
+        'MORTI TOTALI: ',
+        '',
+    ];
+    frasiVittoriaCampagna[3] = [
+        'LIVELLO COMPLETATO',
+        'MORTI TOTALI: ',
+        '',
+    ];
+
+    frasiVittoriaCampagna[4] = [
+        'LIVELLO COMPLETATO',
+        'MORTI TOTALI: ',
+        '',
+    ];
+    frasiVittoriaCampagna[5] = [
+        'LIVELLO COMPLETATO',
+        'MORTI TOTALI: ',
+        '',
+    ];
+    frasiVittoriaCampagna[6] = [
+        'LIVELLO COMPLETATO',
+        'MORTI TOTALI: ',
+        '',
+    ];
+    frasiVittoriaCampagna[7] = [
+        'LIVELLO COMPLETATO',
+        'MORTI TOTALI: ',
+        '',
+    ];
+    frasiVittoriaCampagna[8] = [
+        'LIVELLO COMPLETATO',
+        'MORTI TOTALI: ',
+        '',
+    ];
+    frasiVittoriaCampagna[9] = [
+        'LIVELLO COMPLETATO',
+        'MORTI TOTALI: ',
+        '',
+    ];
+    frasiVittoriaCampagna[10] = [
+      'GRAZIE PER AVER GIOCATO',
+      'TITOLI DI CODA',
+      'TUTTO: LUCA ARESU',
+    ];
+
+    let livelloCampagna = 1;
+    let livelloDaMostrare = 1;
+    let massimoLivelloCampagna = 10;
+    let livelloCampagnaSuperato = false;
 
 
 
@@ -418,18 +676,26 @@ document.addEventListener('DOMContentLoaded', evt => {
         })
     ];
     let intervalProiettili = [];
+    let proiettiliInfiniti = null;
+    let timeoutProiettiliInfiniti = null;
     let objPotenziamento = null;
     let proiettili = [];
     let coloreSfondoNormale = '#ffffff';
     let coloreSfondoEvidenziato = '#226666';
     let vociPausa = [
         new VoceMenu('RIPRENDI',200,coloreSfondoNormale, () => pausa=false),
-        new VoceMenu('NUOVA PARTITA',300,coloreSfondoNormale, nuovaPartita),
+        new VoceMenu('CAMPAGNA', 300, coloreSfondoNormale,  nuovaPartita),
+        new VoceMenu('LIVELLI RANDOM',400,coloreSfondoNormale, () => setTimeout(nuovaPartitaMenu,50)),
+        new VoceMenu('PERSONALE', 500, coloreSfondoNormale, nuovaPartita),
+        new VoceMenu('LIVELLI UTENTE',600,coloreSfondoNormale,nuovaPartita),
+
     ];
+    let schermata = 'pausa';
     let pausa = true;
+    let partitaIniziata = false;
     let ball = {
         color: '#000000',
-        size: 3,
+        size: 3, //min 1 max 5
         x : canvas.width/2,
         y : canvas.height/2,
         dirX: 0,
@@ -447,9 +713,9 @@ document.addEventListener('DOMContentLoaded', evt => {
         else ball.size = size;
     };
     ball.increseSpeed = () => {
-        if(ball.speed+2<10) {
+        if(ball.speed+2<8) {
             ball.speed +=2;
-        }else ball.speed = 10;
+        }else ball.speed = 8;
     };
     ball.lowerSpeed = () => {
         if(ball.speed-2 > 4)
@@ -460,7 +726,7 @@ document.addEventListener('DOMContentLoaded', evt => {
     let colpito = false;
 
     let barra = {
-        size: 3,
+        size: 3, // min 1 max 6
         passo : 11,
         altezza: 30,
         color: '#000000',
@@ -479,21 +745,34 @@ document.addEventListener('DOMContentLoaded', evt => {
 
     let numeroBlocchi = 0;
     let livelloBase = [];
-    livelloBase [0] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
+    livelloBase [0] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,1];
     livelloBase [1] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
     livelloBase [2] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
     livelloBase [3] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1];
     livelloBase [4] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,6,6,6,6];
+    livelloBase [5] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,6,6,6,6];
+    livelloBase [6] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,6,6,6,6];
+    livelloBase [7] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,6,6,6,6];
+    livelloBase [8] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,6,6,6,6];
+    livelloBase [9] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,6,6,6,6];
+    livelloBase [10] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,6,6,6,6];
+    livelloBase [11] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,6,6,6,6];
+    livelloBase [12] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,6,6,6,6];
+    livelloBase [13] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,6,6,6,6];
+    livelloBase [14] = [1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,2,3,1,1,1,0,1,1,6,6,6,6];
 
     let livelloBaseJson = JSON.stringify(livelloBase);
     let arrBlocchi = JSON.parse(livelloBaseJson);
+    let numeroMorti = 0;
+
+    let livelloScelto = null;
     let blocco = {
         lunghezza: 50,
         altezza: 25,
         margin: 0,
         marginX: 100,
-        marginY: 150,
-        colori: ['green','yellow','red','blue','black','white'],
+        marginY: 50,
+        colori: ['green','gold','red','dodgerblue','blueviolet','white'],
     }
 
     let frame = () => {
@@ -502,7 +781,12 @@ document.addEventListener('DOMContentLoaded', evt => {
             gioco();
         }else {
             mostraPunteggio();
-            schermataPausa();
+            if(schermata === 'pausa')
+                schermataPausa();
+            else if(schermata === 'nuovaPartita')
+                nuovaPartitaMenu();
+            else if(schermata === 'prossimo')
+                schermataProssimoLivello();
         }
 
         mouseClick = false;

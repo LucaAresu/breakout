@@ -2,31 +2,67 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>boh</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arkanoid</title>
     <script src="game.js"></script>
     <style>
-        * {
-            width: 100%;
-            height: 100%;
+        html,body {
             margin:0;
             border: none;
             padding: 0;
             box-sizing: border-box;
+            overflow-x: hidden;
         }
         canvas {
-            display: block;
+            display: none;
             margin:auto;
             width: 1920px;
             height: 900px;
             border: 1px solid black;
         }
-        p {
+        .avviso {
             display: inline;
+        }
+        .links {
+            margin-top: 0.5rem;
+            display : flex;
+            justify-content: space-around;
+        }
+        .links a {
+            padding: 1rem;
+            background-color: #efefef;
+            color: black;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+        .links a:hover {
+            transition: 1s;
+            background-color: lightseagreen;
+            border: none;
+        }
+        @media only screen and (min-width: 1900px) and (min-height: 900px) {
+
+            canvas {
+                display: block;
+            }
+            .avviso {
+                display: none;
+            }
         }
     </style>
 </head>
 <body>
+<h4 class="avviso">Per giocare la finestra deve avere la risoluzione di 1920x900</h4> <button class="avviso" onclick="
+document.querySelector('canvas').style.display = 'block';
+let avviso = document.querySelectorAll('.avviso');
+avviso.forEach(ele => {
+    ele.style.display = 'none';
+})
+">Ok, continua comunque</button>
 <canvas></canvas>
-Mouse Y <p id="my"></p> mouseX = <p id="mx"></p> alto sx <p id="as"></p> alto dx <p id="ad"></p> basso sx <p id="bs"></p> basso dx <p id="bd"></p>
+<div class="links">
+    <a href="leveleditor.php" target="_blank">Level Editor</a>
+    <a href="visualizza.php" target="_blank">Archivio Livelli</a>
+</div>
 </body>
 </html>
